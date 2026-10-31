@@ -1,6 +1,7 @@
 {
-  "license": "0BSD",
-  "main": "index.js",
+  "name": "earnings-hub",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -8,12 +9,18 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~54.0.37",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "@expo/vector-icons": "^15.0.3",
-    "react-native-paper": "4.9.2"
+    "@expo/vector-icons": "^14.0.0",
+    "expo": "~54.0.0",
+    "expo-font": "~13.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.0"
   },
-  "private": true
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "expo": {
+    "install": {
+      "exclude": []
+    }
+  }
 }
