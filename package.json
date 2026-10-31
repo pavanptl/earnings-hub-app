@@ -10,17 +10,12 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
-    "expo": "~54.0.0",
-    "expo-font": "~13.0.0",
+    "expo": "~51.0.0",
+    "expo-font": "~12.0.9",
     "react": "18.3.1",
-    "react-native": "0.76.0"
+    "react-native": "0.74.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
-  },
-  "expo": {
-    "install": {
-      "exclude": []
-    }
   }
 }
