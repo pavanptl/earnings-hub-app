@@ -12,7 +12,8 @@
       "backgroundColor": "#090d16"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pavanptl.earningshub"
     },
     "android": {
       "package": "com.pavanptl.earningshub",
