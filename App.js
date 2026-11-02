@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,13 +9,51 @@ import {
   Share,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
+  async function registerForPushNotificationsAsync() {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+    }
+  }
+
+  const triggerTestNotification = async (companyName) => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "🚨 Earnings Announced!",
+        body: `${companyName} has just posted its quarterly results. Tap to view details.`,
+        data: { data: 'goes here' },
+      },
+      trigger: { seconds: 2 },
+    });
+    Alert.alert("Notification Scheduled", `You will receive a live earnings alert for ${companyName} in 2 seconds!`);
+  };
 
   const [earningsData, setEarningsData] = useState([
     {
@@ -59,34 +97,6 @@ export default function App() {
       eps: '₹16.5',
       margin: '21.0%',
       trend: [45, 50, 52, 58, 60],
-    },
-    {
-      id: '4',
-      company: 'HDFC Bank',
-      symbol: 'HDFCBANK',
-      date: 'Upcoming, Nov 8',
-      status: 'Upcoming',
-      revenue: '₹82,400 Cr (Est.)',
-      revenueGrowth: '+15.2%',
-      netProfit: '₹16,500 Cr (Est.)',
-      profitGrowth: '+18.1%',
-      eps: '₹22.1',
-      margin: '35.4%',
-      trend: [70, 75, 82, 90, 98],
-    },
-    {
-      id: '5',
-      company: 'Wipro Ltd',
-      symbol: 'WIPRO',
-      date: 'Announced',
-      status: 'Announced',
-      revenue: '₹22,300 Cr',
-      revenueGrowth: '+2.1%',
-      netProfit: '₹3,220 Cr',
-      profitGrowth: '-1.4%',
-      eps: '₹6.2',
-      margin: '15.8%',
-      trend: [40, 42, 41, 39, 40],
     },
   ]);
 
@@ -142,7 +152,7 @@ export default function App() {
         <Ionicons name="search" size={18} color="#94a3b8" style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: currentTheme.text }]}
-          placeholder="Search company or symbol (e.g. TCS, INFY)..."
+          placeholder="Search company or symbol..."
           placeholderTextColor="#94a3b8"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -182,124 +192,106 @@ export default function App() {
 
       {/* Results List */}
       <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-        {filteredData.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="folder-open-outline" size={48} color="#64748b" />
-            <Text style={[styles.emptyText, { color: currentTheme.textSecondary }]}>
-              No companies found matching your search.
-            </Text>
-          </View>
-        ) : (
-          filteredData.map((item) => (
-            <View
-              key={item.id}
-              style={[
-                styles.card,
-                { backgroundColor: currentTheme.card, borderColor: currentTheme.border },
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={[styles.companyName, { color: currentTheme.text }]}>
-                    {item.company}
-                  </Text>
-                  <Text style={styles.symbolText}>{item.symbol}</Text>
-                </View>
-                <View style={styles.headerRight}>
-                  <View
+        {filteredData.map((item) => (
+          <View
+            key={item.id}
+            style={[
+              styles.card,
+              { backgroundColor: currentTheme.card, borderColor: currentTheme.border },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={[styles.companyName, { color: currentTheme.text }]}>
+                  {item.company}
+                </Text>
+                <Text style={styles.symbolText}>{item.symbol}</Text>
+              </View>
+              <View style={styles.headerRight}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor:
+                        item.status === 'Announced'
+                          ? 'rgba(16, 185, 129, 0.15)'
+                          : 'rgba(59, 130, 246, 0.15)',
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.statusBadge,
+                      styles.statusText,
                       {
-                        backgroundColor:
-                          item.status === 'Announced'
-                            ? 'rgba(16, 185, 129, 0.15)'
-                            : 'rgba(59, 130, 246, 0.15)',
+                        color: item.status === 'Announced' ? '#10b981' : '#3b82f6',
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color: item.status === 'Announced' ? '#10b981' : '#3b82f6',
-                        },
-                      ]}
-                    >
-                      {item.status}
-                    </Text>
-                  </View>
-                  <Text style={[styles.dateText, { color: currentTheme.textSecondary }]}>
-                    {item.date}
+                    {item.status}
                   </Text>
                 </View>
-              </View>
-
-              {/* Financial Metrics Grid */}
-              <View style={[styles.metricsGrid, { borderTopColor: currentTheme.border }]}>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Revenue</Text>
-                  <Text style={[styles.metricValue, { color: currentTheme.text }]}>
-                    {item.revenue}
-                  </Text>
-                  <Text style={[styles.growthText, { color: '#10b981' }]}>
-                    {item.revenueGrowth}
-                  </Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>Net Profit</Text>
-                  <Text style={[styles.metricValue, { color: currentTheme.text }]}>
-                    {item.netProfit}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.growthText,
-                      { color: item.profitGrowth.startsWith('-') ? '#ef4444' : '#10b981' },
-                    ]}
-                  >
-                    {item.profitGrowth}
-                  </Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Text style={styles.metricLabel}>EPS / Margin</Text>
-                  <Text style={[styles.metricValue, { color: currentTheme.text }]}>
-                    ₹{item.eps}
-                  </Text>
-                  <Text style={[styles.growthText, { color: '#3b82f6' }]}>
-                    {item.margin} Margin
-                  </Text>
-                </View>
-              </View>
-
-              {/* Trend Bars & Share Action */}
-              <View style={[styles.cardFooter, { borderTopColor: currentTheme.border }]}>
-                <View style={styles.trendContainer}>
-                  <Text style={styles.trendLabel}>5Q Trend:</Text>
-                  <View style={styles.trendBars}>
-                    {item.trend.map((val, idx) => (
-                      <View
-                        key={idx}
-                        style={[
-                          styles.bar,
-                          {
-                            height: val * 0.22,
-                            backgroundColor: idx === item.trend.length - 1 ? '#3b82f6' : '#64748b',
-                          },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.shareButton}
-                  onPress={() => handleShare(item)}
-                >
-                  <Ionicons name="share-social-outline" size={16} color="#3b82f6" />
-                  <Text style={styles.shareText}>Share</Text>
-                </TouchableOpacity>
+                <Text style={[styles.dateText, { color: currentTheme.textSecondary }]}>
+                  {item.date}
+                </Text>
               </View>
             </View>
-          ))
-        )}
+
+            {/* Financial Metrics Grid */}
+            <View style={[styles.metricsGrid, { borderTopColor: currentTheme.border }]}>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>Revenue</Text>
+                <Text style={[styles.metricValue, { color: currentTheme.text }]}>
+                  {item.revenue}
+                </Text>
+                <Text style={[styles.growthText, { color: '#10b981' }]}>
+                  {item.revenueGrowth}
+                </Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>Net Profit</Text>
+                <Text style={[styles.metricValue, { color: currentTheme.text }]}>
+                  {item.netProfit}
+                </Text>
+                <Text
+                  style={[
+                    styles.growthText,
+                    { color: item.profitGrowth.startsWith('-') ? '#ef4444' : '#10b981' },
+                  ]}
+                >
+                  {item.profitGrowth}
+                </Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>EPS / Margin</Text>
+                <Text style={[styles.metricValue, { color: currentTheme.text }]}>
+                  ₹{item.eps}
+                </Text>
+                <Text style={[styles.growthText, { color: '#3b82f6' }]}>
+                  {item.margin} Margin
+                </Text>
+              </View>
+            </View>
+
+            {/* Actions: Alert & Share */}
+            <View style={[styles.cardFooter, { borderTopColor: currentTheme.border }]}>
+              <TouchableOpacity
+                style={styles.alertButton}
+                onPress={() => triggerTestNotification(item.company)}
+              >
+                <Ionicons name="notifications-outline" size={16} color="#fbbf24" />
+                <Text style={styles.alertText}>Simulate Alert</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={() => handleShare(item)}
+              >
+                <Ionicons name="share-social-outline" size={16} color="#3b82f6" />
+                <Text style={styles.shareText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -322,186 +314,35 @@ const lightTheme = {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  themeToggle: {
-    padding: 8,
-    borderRadius: 10,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-  },
-  filterScroll: {
-    paddingHorizontal: 16,
-    maxHeight: 48,
-    marginBottom: 8,
-  },
-  filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-    height: 32,
-    justifyContent: 'center',
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  listContainer: {
-    padding: 16,
-    paddingTop: 4,
-  },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  symbolText: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  dateText: {
-    fontSize: 11,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    paddingTop: 12,
-    paddingBottom: 12,
-  },
-  metricItem: {
-    flex: 1,
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: '#64748b',
-    marginBottom: 2,
-  },
-  metricValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  growthText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    paddingTop: 12,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  trendLabel: {
-    fontSize: 11,
-    color: '#64748b',
-  },
-  trendBars: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 3,
-    height: 20,
-  },
-  bar: {
-    width: 5,
-    borderRadius: 2,
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  shareText: {
-    fontSize: 12,
-    color: '#3b82f6',
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 60,
-  },
-  emptyText: {
-    fontSize: 14,
-    marginTop: 12,
-    textAlign: 'center',
-  },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
+  themeToggle: { padding: 8, borderRadius: 10 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', margin: 16, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 14 },
+  filterScroll: { paddingHorizontal: 16, maxHeight: 48, marginBottom: 8 },
+  filterTab: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, marginRight: 8, height: 32, justifyContent: 'center' },
+  filterText: { fontSize: 13, fontWeight: '600' },
+  listContainer: { padding: 16, paddingTop: 4 },
+  card: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  companyName: { fontSize: 16, fontWeight: '700' },
+  symbolText: { fontSize: 12, color: '#64748b', fontWeight: '600', marginTop: 2 },
+  headerRight: { alignItems: 'flex-end' },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginBottom: 4 },
+  statusText: { fontSize: 11, fontWeight: '700' },
+  dateText: { fontSize: 11 },
+  metricsGrid: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingTop: 12, paddingBottom: 12 },
+  metricItem: { flex: 1 },
+  metricLabel: { fontSize: 11, color: '#64748b', marginBottom: 2 },
+  metricValue: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  growthText: { fontSize: 11, fontWeight: '600' },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: 12 },
+  alertButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(251, 191, 36, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  alertText: { fontSize: 12, color: '#fbbf24', fontWeight: '600' },
+  shareButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(59, 130, 246, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  shareText: { fontSize: 12, color: '#3b82f6', fontWeight: '600' },
 });
