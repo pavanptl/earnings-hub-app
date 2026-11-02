@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#090d16"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pavanptl.earningshub"
@@ -12,6 +15,15 @@
     "android": {
       "package": "com.pavanptl.earningshub"
     },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#090d16",
+          "imageWidth": 200
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     },
